@@ -38,21 +38,20 @@ class HuggingFaceImageClassifier:
             features, top_class = self.extract_features(image.resolve().__str__())
             data.append({"name": name, "top_class": top_class, "features": features})
 
-            if i % 5 == 0 and i != 0: 
+            if i % 3 == 0 and i != 0: 
                 print(f"Write index to {self.index_file}")                
                 index = self.load_index(self.index_file)
-                index = [list() if index is None else index]
+                index = index + data
                 with open(self.index_file, "wb") as f:
-                    index.append(data)
                     pickle.dump(index, f, protocol=pickle.HIGHEST_PROTOCOL)
                 index = list()
                 data = list()
                 gc.collect()            # garbage collection
 
     def load_index(self, index_file: str):
+        index = []
         if Path(index_file).exists() == False:
             print(f"Index file {index_file} not found. Please use create_index().")  
-            return None        
         with open(index_file, "rb") as f:
             index = pickle.load(f)
         return index
@@ -76,16 +75,14 @@ class HuggingFaceImageClassifier:
 
 
 if __name__ == "__main__":
-    #clf = HuggingFaceImageClassifier()
-    #print(clf.index[0])
-    #print(clf.index[1])
-    # clf.create_index("./img/imagenet")
+    clf = HuggingFaceImageClassifier()
+    clf.create_index("./img/imagenet-mini/")
 
-    # uploaded_img = "./img/dog_input.jpg"
-    # similar_images = clf.find_similar_images(uploaded_img)
-    # print(similar_images)
+    #uploaded_img = "./img/dog_input.jpg"
+    #similar_images = clf.find_similar_images(uploaded_img)
+    #print(similar_images)
 
-    d = pickle.load(open("./data/index_hf.pickle", "rb"))
-    x = d[0]
-
-    print(d[0])
+    #data = pickle.load(open("./data/index_hf.pickle", "rb"))
+    #print(data)
+    #print(data[0])
+    #print(data[1].keys())
