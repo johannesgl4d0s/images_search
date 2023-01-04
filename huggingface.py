@@ -26,7 +26,7 @@ class HuggingFaceImageClassifier:
         result = self.predict_image(image_path)
         top_class = result[0]["label"]
         features = sorted(result, key=lambda x: x["label"])
-        features = [round(x["score"], 6) for x in result]
+        features = [round(x["score"], 6) for x in features]
         return (features, top_class)
 
     def create_index(self, image_repo: str) -> None:
@@ -75,3 +75,6 @@ if __name__ == "__main__":
     uploaded_img = "./img/dog_input.jpg"
     similar_images = clf.find_similar_images(uploaded_img)
     print(similar_images)
+
+    #data = pickle.load(open("./data/index_hf.pickle", "rb"))
+    #print(len(data))
