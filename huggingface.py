@@ -38,7 +38,7 @@ class HuggingFaceImageClassifier:
             features, top_class = self.extract_features(image.resolve().__str__())
             data.append({"name": name, "top_class": top_class, "features": features})
 
-            if i % 100 == 0 and i != 0: 
+            if i % 5 == 0 and i != 0: 
                 print(f"Write index to {self.index_file}")                
                 index = self.load_index(self.index_file)
                 index = [list() if index is None else index]
@@ -57,11 +57,35 @@ class HuggingFaceImageClassifier:
             index = pickle.load(f)
         return index
 
+    def cosine_similarity(a: List[float], b: List[float]):
+        a, b = np.array(a), np.array(b)
+        return np.dot(a,b) / ( np.linalg.norm(a) * np.linalg.norm(b) )
 
-    def cosine_similarity():
-        pass
+
+    def find_similar_images(self, image_path: str, top_k: int = 10) -> List[Tuple[str, float]]:
+        features, top_class = self.extract_features(image_path)
+        similar_images = list()
+
+        for i, image in enumerate(self.index):
+            if image["top_class"] == top_class:
+                score = self.cosine_similarity(image["features"], features)
+                similar_images.append((image["name"], score))
+        
+        similar_images = sorted(similar_images, key=lambda x: x[1], reverse=True)
+        return similar_images[:top_k]
 
 
 if __name__ == "__main__":
-    clf = HuggingFaceImageClassifier()
-    clf.create_index("./img/imagenet")
+    #clf = HuggingFaceImageClassifier()
+    #print(clf.index[0])
+    #print(clf.index[1])
+    # clf.create_index("./img/imagenet")
+
+    # uploaded_img = "./img/dog_input.jpg"
+    # similar_images = clf.find_similar_images(uploaded_img)
+    # print(similar_images)
+
+    d = pickle.load(open("./data/index_hf.pickle", "rb"))
+    x = d[0]
+
+    print(d[0])
