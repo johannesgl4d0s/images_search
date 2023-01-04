@@ -1,34 +1,34 @@
 from transformers import pipeline
-from typing import List, Dict
+from typing import List, Dict, Tuple
 import numpy as np
 from pathlib import Path
-import json
 import pickle
 import gc
 
 
 class HuggingFaceImagePredictor:
-    model_name = "google/vit-base-patch16-224"
-    index_path = "./data/index_hf.json"
+    model_name: str = "google/vit-base-patch16-224"
+    index_file: str = "./data/index_hf.pickle"
 
     def __init__(self, model_name: str = None):
         if model_name is not None:
-            self.model_name = model_name
+            self.model_name = model_name        
         self.pipe = pipeline(task="image-classification", model=self.model_name)
 
-        if Path(self.index_path).exists():
-            self.index = self.load_index(self.index_path)
+        if Path(self.index_file).exists():
+            self.index = self.load_index(self.index_file)
         else:
-            print(f"Index file {self.index_path} not found. Please use create_index().")
+            print(f"Index file {self.index_file} not found. Please use create_index().")  
+        
+    def predict_image(self, image_path: str, top_k: int = 1000) -> List[Dict[float, str]]:
+        return self.pipe(image_path, top_k=top_k)
 
-    def predict_image(self, image_path: str) -> List[Dict[float, str]]:
-        result = self.pipe(image_path, top_k=1000)
-        result = sorted(result, key=lambda x: x["label"])
-        return result
-
-    def extract_features(self, image_path: str) -> List[float]:
+    def extract_features(self, image_path: str) -> Tuple[List[float], str]:
         result = self.predict_image(image_path)
-        return [x["score"] for x in result]
+        top_class = result[0]["label"]
+        features = sorted(result, key=lambda x: x["label"])
+        features = [round(x["score"], 6) for x in result]
+        return (features, top_class)
 
     def create_index(self, image_repo: str) -> None:
         images = list(Path(image_repo).iterdir())
@@ -36,21 +36,21 @@ class HuggingFaceImagePredictor:
         for i, image in enumerate(images):
             print(f"Processing {image.name}")
             name = image.name
-            features = self.extract_features(image.resolve().__str__())
-            index.update({"name": name, "features": features})
+            features, top_class = self.extract_features(image.resolve().__str__())
+            index.update({"name": name, "top_class": top_class, "features": features})
 
-            if i % 1000 == 0: 
+            if i == 10: 
                 gc.collect()            # garbage collection
                 break
 
-        with open(self.index_path, "w", encoding="utf-8") as f:
-            print(f"Write index to {self.index_path}")
-            json.dump(index, f, ensure_ascii=False, indent=4)
+        with open(self.index_file, "w") as f:
+            print(f"Write index to {self.index_file}")
+            pickle.dump(index, f, protocol=pickle.HIGHEST_PROTOCOL)
         self.index = index
 
-    def load_index(self, index_path: str):
-        with open(index_path, "r", encoding="utf-8") as f:
-            index = json.load(f)
+    def load_index(self, index_file: str):
+        with open(index_file, "r") as f:
+            index = pickle.load(f)
         return index
 
     def cosine_similarity():
