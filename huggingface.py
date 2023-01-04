@@ -48,7 +48,6 @@ class HuggingFaceImageClassifier:
                 index = list()
                 data = list()
                 gc.collect()            # garbage collection
-        self.index = self.load_index(self.index_file)
 
     def load_index(self, index_file: str):
         if Path(index_file).exists() == False:
