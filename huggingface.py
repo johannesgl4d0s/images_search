@@ -43,7 +43,7 @@ class HuggingFaceImageClassifier:
             features, top_class = self.extract_features(image.resolve().__str__())
             data.append({"name": name, "top_class": top_class, "features": features})
 
-            if i % 2 == 0 and i != 0: 
+            if i % 100 == 0 and i != 0: 
                 print(f"Write index to {self.index_file}")                
                 index = self.load_index(self.index_file)
                 index = [list() if index is None else index]
@@ -53,7 +53,6 @@ class HuggingFaceImageClassifier:
                 index = list()
                 data = list()
                 gc.collect()            # garbage collection
-                break
         self.index = self.load_index(self.index_file)
 
     def load_index(self, index_file: str):
