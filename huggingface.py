@@ -12,14 +12,14 @@ class HuggingFaceImagePredictor:
     def __init__(self, model_name: str = None):
         if model_name is not None:
             self.model_name = model_name
-        self.pipe = pipeline(task="image-classification", model=model_name)
+        self.pipe = pipeline(task="image-classification", model=self.model_name)
 
         if Path(self.index_path).exists():
             self.index = self.load_index(self.index_path)
         else:
             print(f"Index file {self.index_path} not found. Please use create_index().")
 
-    def predict_image(self, image_path: str) -> List(Dict(float, str)):
+    def predict_image(self, image_path: str) -> List[Dict[float, str]]:
         result = self.pipe(image_path, top_k=1000)
         result = sorted(result, key=lambda x: x["label"])
         return result
@@ -31,12 +31,15 @@ class HuggingFaceImagePredictor:
     def create_index(self, image_repo: str) -> None:
         images = list(Path(image_repo).iterdir())
         index = dict()
-        for image in images:
+        for i, image in enumerate(images):
             print(f"Processing {image.name}")
             name = image.name
-            features = self.extract_features(image)
-            index.update({name, features})
-        
+            features = self.extract_features(image.resolve().__str__())
+            index.update({"name": name, "features": features})
+
+            if i == 100: 
+                break
+            
         with open(self.index_path, "w", encoding="utf-8") as f:
             print(f"Write index to {self.index_path}")
             json.dump(index, f, ensure_ascii=False, indent=4)
@@ -51,3 +54,7 @@ class HuggingFaceImagePredictor:
     def cosine_similarity():
         pass
 
+
+if __name__ == "__main__":
+    clf = HuggingFaceImagePredictor()
+    clf.create_index("./img/imagenet")
