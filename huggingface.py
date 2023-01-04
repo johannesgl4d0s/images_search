@@ -18,11 +18,6 @@ class HuggingFaceImageClassifier:
         self.index_file = index_file
         self.pipe = pipeline(task="image-classification", model=self.model_name)
         self.index = self.load_index(self.index_file)
-
-        if Path(self.index_file).exists():
-            self.index = self.load_index(self.index_file)
-        else:
-            print(f"Index file {self.index_file} not found. Please use create_index().")  
         
     def predict_image(self, image_path: str, top_k: int = 1000) -> List[Dict[float, str]]:
         return self.pipe(image_path, top_k=top_k)
