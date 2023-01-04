@@ -3,6 +3,8 @@ from typing import List, Dict
 import numpy as np
 from pathlib import Path
 import json
+import pickle
+import gc
 
 
 class HuggingFaceImagePredictor:
@@ -24,9 +26,9 @@ class HuggingFaceImagePredictor:
         result = sorted(result, key=lambda x: x["label"])
         return result
 
-    def extract_features(self, image_path: str) -> np.ndarray:
+    def extract_features(self, image_path: str) -> List[float]:
         result = self.predict_image(image_path)
-        return np.array([x["score"] for x in result])
+        return [x["score"] for x in result]
 
     def create_index(self, image_repo: str) -> None:
         images = list(Path(image_repo).iterdir())
@@ -37,13 +39,13 @@ class HuggingFaceImagePredictor:
             features = self.extract_features(image.resolve().__str__())
             index.update({"name": name, "features": features})
 
-            if i == 100: 
+            if i % 1000 == 0: 
+                gc.collect()            # garbage collection
                 break
-            
+
         with open(self.index_path, "w", encoding="utf-8") as f:
             print(f"Write index to {self.index_path}")
             json.dump(index, f, ensure_ascii=False, indent=4)
-
         self.index = index
 
     def load_index(self, index_path: str):
