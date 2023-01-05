@@ -72,9 +72,8 @@ class HuggingFaceImageClassifier:
 if __name__ == "__main__":
     clf = HuggingFaceImageClassifier()
     #clf.create_index("./img/imagenet-mini/")
+    
+    # Test
     uploaded_img = "./img/dog_input.jpg"
     similar_images = clf.find_similar_images(uploaded_img)
     print(similar_images)
-
-    #data = pickle.load(open("./data/index_hf.pickle", "rb"))
-    #print(len(data))
