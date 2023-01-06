@@ -12,7 +12,7 @@ from PIL import Image
 @st.experimental_memo
 def get_hugging_face_model():
     from huggingface import HuggingFaceImageClassifier
-    return HuggingFaceImageClassifier(index_file="./data/index_hf_12k.pickle")
+    return HuggingFaceImageClassifier(index_file="./data/index_hf_25k.pickle")
 
 
 # Sidebar
