@@ -6,7 +6,7 @@ $ python -m streamlit run app.py
 import streamlit as st
 import matplotlib.pyplot as plt
 from PIL import Image
-from pathlib import Path
+
 
 # Cache Hugging Face model
 @st.experimental_memo
@@ -22,13 +22,11 @@ uploaded_img = st.sidebar.file_uploader("Upload an image", type=["jpg", "png"])
 
 model_type = st.sidebar.radio("Model Type", ("Keras", "Hugging Face"))
 
+
 # Display uploaded image
 st.markdown("## Uploaded Image")
-text = "Upload an image to find similar images in the database"
-st.markdown(text)
-
 if uploaded_img is not None:
-    text = "uploaded image:"
+    st.markdown("You have uploaded the following image:")
     img = Image.open(uploaded_img)
     st.image(img, width=300)
 
