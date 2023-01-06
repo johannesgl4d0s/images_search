@@ -6,16 +6,46 @@ $ python -m streamlit run app.py
 import streamlit as st
 import matplotlib.pyplot as plt
 from PIL import Image
+from pathlib import Path
 
-# Basic Page Layout
-st.markdown("# Similar Image Search Engine")
-st.markdown("Upload an image and find similar images in the database")
-uploaded_img = st.file_uploader("Upload an image", type=["jpg", "png"])
+# Cache Hugging Face model
+@st.experimental_memo
+def get_hugging_face_model():
+    from huggingface import HuggingFaceImageClassifier
+    return HuggingFaceImageClassifier(index_file="./data/index_hf_12k.pickle")
+
+
+# Sidebar
+st.sidebar.markdown("# Similar Image Search Engine")
+st.sidebar.markdown("Upload an image and find similar images in the database")
+uploaded_img = st.sidebar.file_uploader("Upload an image", type=["jpg", "png"])
+
+model_type = st.sidebar.radio("Model Type", ("Keras", "Hugging Face"))
 
 # Display uploaded image
+st.markdown("## Uploaded Image")
+text = "Upload an image to find similar images in the database"
+st.markdown(text)
+
 if uploaded_img is not None:
-    st.markdown("## Uploaded Image")
+    text = "uploaded image:"
     img = Image.open(uploaded_img)
-    fig, ax = plt.subplots(1, 1, figsize=(3, 3))
-    ax.imshow(img)
-    st.pyplot(fig)
+    st.image(img, width=300)
+
+
+# Show similar images
+st.markdown("## Similar Images")
+st.markdown("The following images are similar to the uploaded image")
+
+with st.spinner("Loading Hugging Face model..."):
+    clf_hf = get_hugging_face_model()
+
+if uploaded_img is not None:
+    if model_type == "Hugging Face":
+        with st.spinner("Calculating Scores..."):
+            similar_images = clf_hf.find_similar_images(img, top_k=10)
+
+            for image, score in similar_images:        
+                st.markdown(f"**{image}**")
+                st.markdown(f"**Score: {score:.2f}**")
+                st.image(f"./img/imagenet-mini/{image}", width=300)
