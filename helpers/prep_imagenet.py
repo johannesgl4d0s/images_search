@@ -15,7 +15,7 @@ def resize_image(image_path: str, output_path: str, size: int):
 
 
 if __name__ == "__main__":
-    input_path = Path("C:/Users/Admin/Downloads/ILSVRC2012_img_val/")
+    input_path = Path("./img/imagenet")
     output_path = Path("./img/imagenet-mini")
     size = 256
 

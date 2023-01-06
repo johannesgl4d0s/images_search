@@ -7,14 +7,6 @@ import gc
 
 
 class HuggingFaceImageClassifier:
-    """
-    HuggingFace Image Classifier, which uses ViT (Vision Transformer) as a base model.
-    The model is trained on ImageNet dataset. Builds an index of images and finds similar images.
-
-    Attributes:
-        model_name (str): Name of the model to use. Default: google/vit-base-patch16-224
-        index_file (str): Path to the index file. Default: ./data/index_hf.pickle
-    """
     model_name = ""
     index_file = ""
     pipe = None
@@ -22,6 +14,14 @@ class HuggingFaceImageClassifier:
 
     def __init__(self, model_name: str = "google/vit-base-patch16-224", 
                  index_file: str = "./data/index_hf.pickle"):
+        """
+        HuggingFace Image Classifier, which uses ViT (Vision Transformer) as a base model.
+        The model is trained on ImageNet dataset. Builds an index of images and finds similar images.
+
+        Args:
+            model_name (str): Name of the model to use. Default: google/vit-base-patch16-224
+            index_file (str): Path to the index file. Default: ./data/index_hf.pickle
+        """
         self.model_name = model_name        
         self.index_file = index_file
         self.pipe = pipeline(task="image-classification", model=self.model_name)
