@@ -38,6 +38,7 @@ class KerasImageClassifier:
         return features
 
     def extract_pca_features(self, features: np.ndarray) -> np.ndarray:
+        # ToDO: PCA Fit - must be trained on the same dataset
         pca = PCA(n_components=300)
         pca.fit(features)
         pca_features = pca.transform(features)
@@ -66,6 +67,15 @@ class KerasImageClassifier:
         with open(index_file, "rb") as f:
             index = np.load(f)
             return index
+
+
+    def find_similar_images(self, image_path: str, k: int = 5) -> list:
+        features = self.extract_features(image_path)
+        pca_features = self.extract_pca_features(features)
+        #distances = distance.cdist(pca_features, self.index, "euclidean")[0]
+        #results = zip(range(len(distances)), distances)
+        #results = sorted(results, key=lambda x: x[1])[:k]
+        #return results
 
 
 if __name__ == "__main__":
