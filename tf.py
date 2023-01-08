@@ -1,5 +1,5 @@
 import keras
-from keras.applications.imagenet_utils import decode_predictions, preprocess_input
+from keras.applications.imagenet_utils import preprocess_input
 from keras.models import Model
 import pandas as pd
 import numpy as np
@@ -30,23 +30,23 @@ class KerasImageClassifier:
         self.feature_extractor = Model(inputs=self.model.input, 
                                        outputs=self.model.get_layer("fc2").output)
         print("Loading index...")
-        self.index = self.load_index(self.index_file)
+        self.index = self.__load_index(self.index_file)
         print("Loading PCA...")
-        self.pca = self.load_pca(self.pca_file)
+        self.pca = self.__load_pca(self.pca_file)
 
-    def load_image(self, image_path: str) -> Tuple[Image.Image, np.ndarray]: 
+    def __load_image(self, image_path: str) -> Tuple[Image.Image, np.ndarray]: 
         img = keras.utils.load_img(image_path, target_size=self.model.input_shape[1:3])
         x = keras.utils.img_to_array(img)
         x = np.expand_dims(x, axis=0)
         x = preprocess_input(x)
         return img, x
 
-    def extract_features(self, image_path: str) -> np.ndarray:
-        img, x = self.load_image(image_path)
+    def __extract_features(self, image_path: str) -> np.ndarray:
+        img, x = self.__load_image(image_path)
         features = self.feature_extractor.predict(x)
         return features
 
-    def train_pca(self, features: np.ndarray) -> PCA:
+    def __train_pca(self, features: np.ndarray) -> PCA:
         n = min(300, len(features))
         pca = PCA(n_components=n)
         pca.fit(features)
@@ -60,12 +60,12 @@ class KerasImageClassifier:
         images = list(Path(image_repo).iterdir())
         for i, image_path in enumerate(images):
             print(f"Processing {image_path.name}, Length of index {len(features)}")
-            feat = self.extract_features(image_path)[0]
+            feat = self.__extract_features(image_path)[0]
             features.append(feat)
             image_paths.append(image_path)          # might have different order than images
 
         print("Extracting PCA features (might take some minutes)...")
-        self.pca = self.train_pca(features)
+        self.pca = self.__train_pca(features)
         pca_features = self.pca.transform(features)
         self.index = [image_paths, pca_features]
 
@@ -74,7 +74,7 @@ class KerasImageClassifier:
             pickle.dump(self.index, f, protocol=pickle.HIGHEST_PROTOCOL)
             gc.collect()            # garbage collection
              
-    def load_index(self, index_file: str) -> List:
+    def __load_index(self, index_file: str) -> List:
         if Path(index_file).exists() == False:
             print(f"Index file {index_file} not found. Please use create_index().")  
             return None
@@ -82,7 +82,7 @@ class KerasImageClassifier:
             index = pickle.load(f)
             return index
 
-    def load_pca(self, pca_file: str) -> PCA:
+    def __load_pca(self, pca_file: str) -> PCA:
         if Path(pca_file).exists() == False:
             print(f"PCA file {pca_file} not found. Please use create_index().")  
             return None
@@ -91,7 +91,7 @@ class KerasImageClassifier:
             return pca
 
     def find_similar_images(self, image_path: str, top_k: int = 10) -> List[Tuple[str, float]]:
-        new_features = self.extract_features(image_path)
+        new_features = self.__extract_features(image_path)
         new_pca_features = self.pca.transform(new_features)[0]
         distances = [ distance.cosine(new_pca_features, feat) for feat in self.index[1] ]
         idx_closest = sorted(range(len(distances)), key=lambda k: distances[k])[:top_k]
