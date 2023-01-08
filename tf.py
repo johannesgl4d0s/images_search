@@ -43,11 +43,12 @@ class KerasImageClassifier:
 
     def extract_features(self, image_path: str) -> np.ndarray:
         img, x = self.load_image(image_path)
-        features = self.feature_extractor.predict(x)[0]
+        features = self.feature_extractor.predict(x)
         return features
 
     def train_pca(self, features: np.ndarray) -> PCA:
-        pca = PCA(n_components=300)
+        n = min(300, len(features))
+        pca = PCA(n_components=n)
         pca.fit(features)
         with open("./data/pca_tf.pickle", "wb") as f:
             pickle.dump(pca, f)
@@ -59,7 +60,7 @@ class KerasImageClassifier:
         images = list(Path(image_repo).iterdir())
         for i, image_path in enumerate(images):
             print(f"Processing {image_path.name}, Length of index {len(features)}")
-            feat = self.extract_features(image_path)
+            feat = self.extract_features(image_path)[0]
             features.append(feat)
             image_paths.append(image_path)          # might have different order than images
 
@@ -91,7 +92,7 @@ class KerasImageClassifier:
 
     def find_similar_images(self, image_path: str, top_k: int = 10) -> List[Tuple[str, float]]:
         new_features = self.extract_features(image_path)
-        new_pca_features = self.pca.transform(features)
+        new_pca_features = self.pca.transform(new_features)[0]
         distances = [ distance.cosine(new_pca_features, feat) for feat in self.index[1] ]
         idx_closest = sorted(range(len(distances)), key=lambda k: distances[k])[:top_k]
         similar_images = list(zip([self.index[0][i] for i in idx_closest],
@@ -101,6 +102,9 @@ class KerasImageClassifier:
 
 if __name__ == "__main__":
     clf = KerasImageClassifier()
-    img, x = clf.load_image("./img/dog_input.jpg")
-    features = clf.extract_features("./img/dog_input.jpg")
-    print("done")
+    clf.create_index("./img/imagenet-mini/")
+
+    # Test
+    uploaded_img = "./img/dog_input.jpg"
+    similar_images = clf.find_similar_images(uploaded_img)
+    print(similar_images)
