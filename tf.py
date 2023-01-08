@@ -100,18 +100,18 @@ class KerasImageClassifier:
             None
         """
         features = []
-        image_paths = []
+        names = []
         images = list(Path(image_repo).iterdir())
         for i, image_path in enumerate(images):
             print(f"Processing {image_path.name}, Length of index {len(features)}")
             feat = self.__extract_features(image_path)[0]
             features.append(feat)
-            image_paths.append(image_path)          # might have different order than images
+            names.append(image_path.name)          # might have different order than images
 
         print("Extracting PCA features (might take some minutes)...")
         self.pca = self.__train_pca(features)
         pca_features = self.pca.transform(features)
-        self.index = [image_paths, pca_features]
+        self.index = [names, pca_features]
 
         with open(self.index_file, "wb") as f:
             print(f"Saving index to {self.index_file}...")
@@ -174,9 +174,14 @@ class KerasImageClassifier:
 
 if __name__ == "__main__":
     clf = KerasImageClassifier()
-    clf.create_index("./img/imagenet-mini/")
+    #clf.create_index("./img/imagenet-mini/")
 
     # Test
     uploaded_img = "./img/dog_input.jpg"
     similar_images = clf.find_similar_images(uploaded_img)
     print(similar_images)
+
+    # Display
+    im = Image.open(f"./img/imagenet-mini/{similar_images[0][0]}")
+    im.show()
+    print("Done")
