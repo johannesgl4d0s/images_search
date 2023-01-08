@@ -6,24 +6,33 @@ import numpy as np
 from sklearn.decomposition import PCA
 from scipy.spatial import distance
 
-from typing import Tuple
+from typing import Tuple, List
 from PIL import Image
 from pathlib import Path
 import gc
+import pickle
 
 class KerasImageClassifier:
     model = None
     feature_extractor = None
     index_file = ""
+    pca_file = ""
     index = None
+    pca = None
 
-    def __init__(self, index_file: str = "./data/index_tf.npy"):
+    def __init__(self, 
+                index_file: str = "./data/index_tf.pickle",
+                pca_file: str = "./data/pca_tf.pickle"):
         self.index_file = index_file
+        self.pca_file = pca_file
+        print("Loading model...")
         self.model = keras.applications.VGG16(weights="imagenet", include_top=True)
         self.feature_extractor = Model(inputs=self.model.input, 
                                        outputs=self.model.get_layer("fc2").output)
-        self.index = self.__load_index(self.index_file)
-
+        print("Loading index...")
+        self.index = self.load_index(self.index_file)
+        print("Loading PCA...")
+        self.pca = self.load_pca(self.pca_file)
 
     def load_image(self, image_path: str) -> Tuple[Image.Image, np.ndarray]: 
         img = keras.utils.load_img(image_path, target_size=self.model.input_shape[1:3])
@@ -37,45 +46,57 @@ class KerasImageClassifier:
         features = self.feature_extractor.predict(x)[0]
         return features
 
-    def extract_pca_features(self, features: np.ndarray) -> np.ndarray:
-        # ToDO: PCA Fit - must be trained on the same dataset
+    def train_pca(self, features: np.ndarray) -> PCA:
         pca = PCA(n_components=300)
         pca.fit(features)
-        pca_features = pca.transform(features)
-        return pca_features
+        with open("./data/pca_tf.pickle", "wb") as f:
+            pickle.dump(pca, f)
+        return pca
 
     def create_index(self, image_repo: str) -> None:
         features = []
+        image_paths = []
         images = list(Path(image_repo).iterdir())
         for i, image_path in enumerate(images):
             print(f"Processing {image_path.name}, Length of index {len(features)}")
             feat = self.extract_features(image_path)
             features.append(feat)
+            image_paths.append(image_path)          # might have different order than images
 
-        print("Extracting PCA features...")
-        self.index = self.extract_pca_features(features)
-        
+        print("Extracting PCA features (might take some minutes)...")
+        self.pca = self.train_pca(features)
+        pca_features = self.pca.transform(features)
+        self.index = [image_paths, pca_features]
+
         with open(self.index_file, "wb") as f:
             print(f"Saving index to {self.index_file}...")
-            np.save(f, self.index)
+            pickle.dump(self.index, f, protocol=pickle.HIGHEST_PROTOCOL)
             gc.collect()            # garbage collection
              
-    def load_index(self, index_file: str) -> np.ndarray:
+    def load_index(self, index_file: str) -> List:
         if Path(index_file).exists() == False:
             print(f"Index file {index_file} not found. Please use create_index().")  
-            return []
+            return None
         with open(index_file, "rb") as f:
-            index = np.load(f)
+            index = pickle.load(f)
             return index
 
+    def load_pca(self, pca_file: str) -> PCA:
+        if Path(pca_file).exists() == False:
+            print(f"PCA file {pca_file} not found. Please use create_index().")  
+            return None
+        with open(pca_file, "rb") as f:
+            pca = pickle.load(f)
+            return pca
 
-    def find_similar_images(self, image_path: str, k: int = 5) -> list:
-        features = self.extract_features(image_path)
-        pca_features = self.extract_pca_features(features)
-        #distances = distance.cdist(pca_features, self.index, "euclidean")[0]
-        #results = zip(range(len(distances)), distances)
-        #results = sorted(results, key=lambda x: x[1])[:k]
-        #return results
+    def find_similar_images(self, image_path: str, top_k: int = 10) -> List[Tuple[str, float]]:
+        new_features = self.extract_features(image_path)
+        new_pca_features = self.pca.transform(features)
+        distances = [ distance.cosine(new_pca_features, feat) for feat in self.index[1] ]
+        idx_closest = sorted(range(len(distances)), key=lambda k: distances[k])[:top_k]
+        similar_images = list(zip([self.index[0][i] for i in idx_closest],
+                                  [distances[i] for i in idx_closest]))
+        return similar_images
 
 
 if __name__ == "__main__":
