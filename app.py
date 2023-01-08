@@ -7,14 +7,15 @@ import streamlit as st
 from PIL import Image
 
 
-# Cache Hugging Face model
-#@st.experimental_memo
+# Make Singleton Hugging Face model
+@st.experimental_singleton
 def get_hugging_face_model():
     from huggingface import HuggingFaceImageClassifier
     return HuggingFaceImageClassifier(index_file="./data/index_hf_25k.pickle")
 
-# Cache TensorFlow model
-#@st.experimental_memo
+# Make Singleton TensorFlow model
+# (Caching not working due to pickle issues with TF)
+@st.experimental_singleton
 def get_tensorflow_model():
     from tf import KerasImageClassifier
     return KerasImageClassifier(index_file="./data/index_tf.pickle", pca_file="./data/pca_tf.pickle")
@@ -52,5 +53,5 @@ if uploaded_img is not None:
 
         for image, score in similar_images:        
             st.markdown(f"**{image}**")
-            st.markdown(f"**Score: {score:.2f}**")
+            st.markdown(f"**Score/Distance: {score:.2f}**")
             st.image(f"./img/imagenet-mini/{image}", width=300)
