@@ -8,16 +8,21 @@ from PIL import Image
 
 
 # Cache Hugging Face model
-@st.experimental_memo
+#@st.experimental_memo
 def get_hugging_face_model():
     from huggingface import HuggingFaceImageClassifier
     return HuggingFaceImageClassifier(index_file="./data/index_hf_25k.pickle")
 
 # Cache TensorFlow model
-@st.experimental_memo
+#@st.experimental_memo
 def get_tensorflow_model():
     from tf import KerasImageClassifier
     return KerasImageClassifier(index_file="./data/index_tf.pickle", pca_file="./data/pca_tf.pickle")
+
+
+# Pre-Load both models
+clf_tf = get_tensorflow_model()             
+clf_hf = get_hugging_face_model()
 
 
 # Sidebar
@@ -27,7 +32,6 @@ uploaded_img = st.sidebar.file_uploader("Upload an image", type=["jpg", "png"])
 
 model_type = st.sidebar.radio("Model Type", ("Tensorflow", "Hugging Face"))
 
-
 # Display uploaded image
 st.markdown("## Uploaded Image")
 if uploaded_img is not None:
@@ -35,20 +39,16 @@ if uploaded_img is not None:
     img = Image.open(uploaded_img)
     st.image(img, width=300)
 
-
 # Show similar images
 st.markdown("## Similar Images")
 st.markdown("The following images are similar to the uploaded image")
 
-with st.spinner("Loading AI..."):
-    if model_type == "Tensorflow":
-        clf = get_tensorflow_model()
-    else:
-        clf = get_hugging_face_model()
-
 if uploaded_img is not None:
     with st.spinner("Calculating Scores/Distances..."):
-        similar_images = clf.find_similar_images(img, top_k=10)
+        if model_type == "Tensorflow":
+            similar_images = clf_tf.find_similar_images(img, top_k=10)
+        else:
+            similar_images = clf_hf.find_similar_images(img, top_k=10)
 
         for image, score in similar_images:        
             st.markdown(f"**{image}**")

@@ -6,7 +6,7 @@ import numpy as np
 from sklearn.decomposition import PCA
 from scipy.spatial import distance
 
-from typing import Tuple, List
+from typing import Tuple, List, Union
 from PIL import Image
 from pathlib import Path
 import gc
@@ -42,17 +42,20 @@ class KerasImageClassifier:
         print("Loading PCA...")
         self.pca = self.__load_pca(self.pca_file)
 
-    def __load_image(self, image_path: str) -> Tuple[Image.Image, np.ndarray]: 
+    def __load_image(self, image_input: Union[str, Image.Image]) -> Tuple[Image.Image, np.ndarray]: 
         """
         Preprocesses image for VGG16 model
 
         Args:
-            image_path (str): Path to image
+            image_input (Union[str, Image.Image]): Path to image or PIL Image
         
         Returns:
             Tuple[Image.Image, np.ndarray]: Image and preprocessed image
         """
-        img = keras.utils.load_img(image_path, target_size=self.model.input_shape[1:3])
+        if type(image_input) != "str":
+            img = image_input.resize(self.model.input_shape[1:3])
+        else:
+            img = keras.utils.load_img(image_input, target_size=self.model.input_shape[1:3])
         x = keras.utils.img_to_array(img)
         x = np.expand_dims(x, axis=0)
         x = preprocess_input(x)
@@ -179,6 +182,9 @@ if __name__ == "__main__":
     # Test
     uploaded_img = "./img/dog_input.jpg"
     similar_images = clf.find_similar_images(uploaded_img)
+    
+    im = Image.open(uploaded_img)
+    similar_images = clf.find_similar_images(im)
     print(similar_images)
 
     # Display
